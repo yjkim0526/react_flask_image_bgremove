@@ -1,4 +1,4 @@
-import React, { useCallback, useState, useRef, useEffect } from 'react';
+import React, { useCallback, useState, useEffect } from 'react';
 
 function Main({ 
   previewUrl, 
@@ -16,37 +16,55 @@ function Main({
   // 원본 이미지 저장
   const [originalImage, setOriginalImage] = useState(null);
   const [removedBgImage, setRemovedBgImage] = useState(null);
+  const [lastEffectImage, setLastEffectImage] = useState(null);
 
   // 이미지가 처리될 때마다 원본 이미지 저장
   useEffect(() => {
     if (currentImage && !originalImage) {
       setOriginalImage(currentImage);
     }
-  }, [currentImage]);
+  }, [currentImage, originalImage]);
 
   // 배경 제거된 이미지 저장
   useEffect(() => {
-    if (processedImageUrl && !removedBgImage) {
+    if (processedImageUrl) {
       fetch(processedImageUrl)
         .then(res => res.blob())
         .then(blob => {
-          setRemovedBgImage(new File([blob], 'removed-bg.png', { type: 'image/png' }));
+          const removedBgFile = new File([blob], 'removed-bg.png', { type: 'image/png' });
+          setRemovedBgImage(removedBgFile);
+          console.log('배경 제거된 이미지 저장됨:', removedBgFile);
+        })
+        .catch(error => {
+          console.error('배경 제거된 이미지 저장 중 오류:', error);
         });
     }
   }, [processedImageUrl]);
 
-  // 복원 함수
-  const handleRestore = useCallback(() => {
-    if (removedBgImage) {
-      setCurrentImage(removedBgImage);
-      const url = window.URL.createObjectURL(removedBgImage);
-      setProcessedImageUrl(url);
+  // 효과 적용 전 이미지 저장
+  useEffect(() => {
+    if (currentImage) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const blob = new Blob([currentImage], { type: currentImage.type });
+        setLastEffectImage(new File([blob], 'last-effect.png', { type: 'image/png' }));
+      };
+      reader.readAsArrayBuffer(currentImage);
     }
-  }, [removedBgImage, setCurrentImage, setProcessedImageUrl]);
+  }, [currentImage]);
 
   // 효과 적용 함수
   const handleEffectClick = useCallback((effectType) => {
     if (!currentImage) return;
+    
+    // 효과 적용 전 현재 상태 저장
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const blob = new Blob([currentImage], { type: currentImage.type });
+      setLastEffectImage(new File([blob], 'last-effect.png', { type: 'image/png' }));
+    };
+    reader.readAsArrayBuffer(currentImage);
+    
     // 효과 타입에 따라 다른 강도 적용
     const effectValues = {
       'brightness': 1.2,
@@ -58,6 +76,19 @@ function Main({
     };
     applyEffect(effectType, effectValues[effectType]);
   }, [currentImage, applyEffect]);
+
+  // 복원 함수
+  const handleRestore = useCallback(() => {
+    console.log('복원 버튼 클릭됨', { removedBgImage, currentImage });
+    if (removedBgImage) {
+      console.log('removedBgImage 사용');
+      setCurrentImage(removedBgImage);
+      const url = URL.createObjectURL(removedBgImage);
+      setProcessedImageUrl(url);
+    } else {
+      console.log('복원할 이미지가 없습니다');
+    }
+  }, [removedBgImage, setCurrentImage, setProcessedImageUrl]);
 
   const handleDrop = useCallback((e) => {
     e.preventDefault();
@@ -116,6 +147,8 @@ function Main({
                         setProcessedImageUrl(null);
                         setCurrentImage(null);
                         setOriginalImage(null);
+                        setRemovedBgImage(null);
+                        setLastEffectImage(null);
                       }}
                     >
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -151,6 +184,8 @@ function Main({
                         setProcessedImageUrl(null);
                         setCurrentImage(null);
                         setOriginalImage(null);
+                        setRemovedBgImage(null);
+                        setLastEffectImage(null);
                       }}
                     >
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -307,7 +342,7 @@ function Main({
               <span>채도</span>
             </button>
 
-            <button
+            {/* <button
               onClick={() => handleEffectClick('grayscale')}
               disabled={isLoading || !currentImage}
               className={`min-w-[60px] px-2 py-1 text-xs rounded-md border flex items-center justify-center gap-1 ${
@@ -322,13 +357,13 @@ function Main({
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v8M8 12h8" />
               </svg>
               <span>흑백</span>
-            </button>
+            </button> */}
 
-            <button
+            {/* <button
               onClick={handleRestore}
-              disabled={isLoading || !currentImage || !removedBgImage}
+              disabled={isLoading || !removedBgImage}
               className={`min-w-[60px] px-2 py-1 text-xs rounded-md border flex items-center justify-center gap-1 ${
-                !currentImage || !removedBgImage || isLoading
+                !removedBgImage || isLoading
                   ? 'text-gray-500 bg-gray-100 border-gray-300 cursor-not-allowed'
                   : 'text-yellow-700 hover:text-yellow-800 bg-yellow-50 border-yellow-300 hover:bg-yellow-100'
               }`}
@@ -338,7 +373,7 @@ function Main({
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
               </svg>
               <span>복원</span>
-            </button>
+            </button> */}
           </div>
         </div>
       </div>
@@ -346,4 +381,4 @@ function Main({
   );
 }
 
-export default Main; 
+export default Main;

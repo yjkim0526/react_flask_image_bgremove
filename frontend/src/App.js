@@ -11,6 +11,7 @@ function App() {
   const [isLoading, setIsLoading] = useState(false);
   const [processedImageUrl, setProcessedImageUrl] = useState(null);
   const [currentImage, setCurrentImage] = useState(null);
+  const [originalImage, setOriginalImage] = useState(null);
 
   const handleFileSelect = (event) => {
     const file = event.target.files[0];
@@ -40,7 +41,15 @@ function App() {
 
       const url = window.URL.createObjectURL(new Blob([response.data]));
       setProcessedImageUrl(url);
-      setCurrentImage(new File([response.data], 'processed.png', { type: 'image/png' }));
+      
+      // 배경 제거된 이미지를 파일로 저장
+      const processedFile = new File([response.data], 'processed.png', { type: 'image/png' });
+      setCurrentImage(processedFile);
+      
+      // 원본 이미지 저장
+      if (!originalImage) {
+        setOriginalImage(selectedFile);
+      }
     } catch (error) {
       console.error('Error:', error);
       alert('배경 제거 중 오류가 발생했습니다.');
