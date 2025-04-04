@@ -52,7 +52,7 @@ function App() {
       }
     } catch (error) {
       console.error('Error:', error);
-      alert('배경 제거 중 오류가 발생했습니다.');
+      alert(`배경 제거 중 오류가 발생했습니다. 상세 오류: ${error.message}`);
     } finally {
       setIsLoading(false);
     }
