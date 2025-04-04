@@ -1,0 +1,54 @@
+name: Deploy to AWS EC2
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.AWS_SSH_KEY }}" | tr -d '\r' > ~/.ssh/aws.key
+          chmod 600 ~/.ssh/aws.key
+          eval $(ssh-agent -s)
+          ssh-add ~/.ssh/aws.key
+          echo -e "Host ec2\n\tHostName ${{ secrets.AWS_HOST }}\n\tUser ${{ secrets.AWS_USERNAME }}\n\tIdentityFile ~/.ssh/aws.key\n\tStrictHostKeyChecking no" > ~/.ssh/config
+
+      - name: Test SSH connection
+        run: ssh -v ec2 'echo "SSH connection successful"'
+
+      - name: Deploy to EC2
+        run: |
+          ssh ec2 '
+            # 프로젝트 디렉토리로 이동
+            cd /usr/share/nginx/react_flask_image_bgremove &&
+            
+            # Git 업데이트
+            sudo git pull origin main &&
+            
+            # Python 환경 설정
+            source /opt/conda/etc/profile.d/conda.sh &&
+            conda activate base &&
+            
+            # Python 의존성 설치
+            pip install -r requirements.txt &&
+            
+            # React 프론트엔드 빌드
+            cd frontend &&
+            npm install &&
+            npm run build &&
+            
+            # Nginx 재시작
+            sudo systemctl restart nginx &&
+            
+            # Flask 백엔드 재시작
+            sudo systemctl restart flask-app
+          ' 
