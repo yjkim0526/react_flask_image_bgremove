@@ -35,7 +35,7 @@ function App() {
     formData.append('image', selectedFile);
 
     try {
-      const response = await axios.post('http://localhost:5000/remove-bg', formData, {
+      const response = await axios.post('/api/remove-bg', formData, {
         responseType: 'blob'
       });
 
@@ -68,7 +68,7 @@ function App() {
     formData.append('effect_value', effectValue);
 
     try {
-      const response = await axios.post('http://localhost:5000/apply-effect', formData, {
+      const response = await axios.post('/api/apply-effect', formData, {
         responseType: 'blob'
       });
 
