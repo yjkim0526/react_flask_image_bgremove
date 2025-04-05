@@ -35,14 +35,20 @@ function App() {
     formData.append('image', selectedFile);
 
     try {
+      console.log('배경 제거 요청 시작:', selectedFile.name);
       const response = await axios.post('/api/remove-bg', formData, {
-        responseType: 'blob'
+        responseType: 'blob',
+        timeout: 300000, // 5분 타임아웃
+        onUploadProgress: (progressEvent) => {
+          const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+          console.log(`업로드 진행률: ${percentCompleted}%`);
+        }
       });
 
+      console.log('배경 제거 응답 수신');
       const url = window.URL.createObjectURL(new Blob([response.data]));
       setProcessedImageUrl(url);
       
-      // 배경 제거된 이미지를 파일로 저장
       const processedFile = new File([response.data], 'processed.png', { type: 'image/png' });
       setCurrentImage(processedFile);
       
@@ -51,8 +57,30 @@ function App() {
         setOriginalImage(selectedFile);
       }
     } catch (error) {
-      console.error('Error:', error);
-      alert(`배경 제거 중 오류가 발생했습니다. 상세 오류: ${error.message}`);
+      console.error('상세 오류:', {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status,
+        headers: error.response?.headers
+      });
+      
+      let errorMessage = '배경 제거 중 오류가 발생했습니다.';
+      if (error.response) {
+        errorMessage += `\n상태 코드: ${error.response.status}`;
+        if (error.response.data) {
+          try {
+            const errorText = await error.response.data.text();
+            errorMessage += `\n서버 응답: ${errorText}`;
+          } catch (e) {
+            errorMessage += '\n서버 응답을 읽을 수 없습니다.';
+          }
+        }
+      } else if (error.request) {
+        errorMessage += '\n서버에 연결할 수 없습니다.';
+      } else {
+        errorMessage += `\n${error.message}`;
+      }
+      alert(errorMessage);
     } finally {
       setIsLoading(false);
     }
