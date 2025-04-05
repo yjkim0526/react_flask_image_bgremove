@@ -8,7 +8,7 @@ import os
 app = Flask(__name__)
 CORS(app)
 
-@app.route('/remove-bg', methods=['POST'])
+@app.route('/api/remove-bg', methods=['POST'])
 def remove_background():
     if 'image' not in request.files:
         return {'error': '이미지 파일이 없습니다.'}, 400
